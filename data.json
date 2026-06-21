@@ -1,0 +1,32 @@
+{
+  "records": [
+    {
+      "date": "2026-06-15",
+      "student": "고윤아",
+      "hours": 1,
+      "minutes": 30,
+      "totalMinutes": 90
+    },
+    {
+      "date": "2026-06-15",
+      "student": "고윤아",
+      "hours": 1,
+      "minutes": 0,
+      "totalMinutes": 60
+    },
+    {
+      "date": "2026-06-15",
+      "student": "김은서",
+      "hours": 1,
+      "minutes": 30,
+      "totalMinutes": 90
+    },
+    {
+      "date": "2026-06-15",
+      "student": "장세인",
+      "hours": 1,
+      "minutes": 0,
+      "totalMinutes": 60
+    }
+  ]
+}

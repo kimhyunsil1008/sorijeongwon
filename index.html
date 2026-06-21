@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 소리정원 - 연습 시간 기록</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="소리정원">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23667eea' width='180' height='180' rx='40'/><text x='90' y='90' font-size='100' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central'>🎓</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            flex: 1;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-badge {
+            background: rgba(255,255,255,0.3);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .logout-btn {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* 모드 선택 모달 */
+        .mode-selector {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mode-selector.active {
+            display: flex;
+        }
+
+        .mode-selector-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .mode-selector-content h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .mode-selector-content p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .mode-btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-btn-student {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .mode-btn-student:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .mode-btn-admin {
+            background: #f5f5f5;
+            color: #333;
+            border: 2px solid #667eea;
+        }
+
+        .mode-btn-admin:hover {
+            background: #f0f0f0;
+        }
+
+        /* 학생 정보 입력 모달 */
+        .student-info-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .student-info-modal.active {
+            display: flex;
+        }
+
+        .student-info-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .student-info-content h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .student-info-content p {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .info-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .info-input-field {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .info-input-field label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .info-input-field input,
+        .info-input-field select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .info-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .info-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .info-btn-confirm {
+            background: #667eea;
+            color: white;
+        }
+
+        .info-btn-confirm:hover {
+            background: #5568d3;
+        }
+
+        .info-btn-cancel {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .info-btn-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        /* 비밀번호 입력 모달 */
+        .password-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .password-modal.active {
+            display: flex;
+        }
+
+        .password-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .password-modal-content h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .password-modal-content p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .password-input {
+            padding: 12px;
+            font-size: 18px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            width: 100%;
+            margin-bottom: 15px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .password-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .password-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .password-btn-confirm {
+            background: #667eea;
+            color: white;
+        }
+
+        .password-btn-confirm:hover {
+            background: #5568d3;
+        }
+
+        .password-btn-cancel {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .password-btn-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            white-space: nowrap;
+            border: 2px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .tab-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .content {
+            padding: 30px 20px;
+            min-height: 500px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .input-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-field label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .input-field input {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stats-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stats-filter button {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .stats-filter button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card .label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 30px;
+        }
+
+        .student-list {
+            list-style: none;
+        }
+
+        .student-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .student-rank {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .student-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .student-hours {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .manage-section {
+            margin-bottom: 30px;
+        }
+
+        .manage-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .add-student-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .add-student-form input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .manage-list {
+            list-style: none;
+        }
+
+        .manage-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .delete-btn {
+            background: #f5576c;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .tab-btn {
+                font-size: 14px;
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 모드 선택 모달 -->
+    <div class="mode-selector active" id="modeSelector">
+        <div class="mode-selector-content">
+            <h2>🎓 소리정원</h2>
+            <p>어떻게 접속할까요?</p>
+            <div class="mode-buttons">
+                <button class="mode-btn mode-btn-student" onclick="selectStudentMode()">
+                    📱 학생 모드<br><small style="font-size: 12px;">연습 시간 기록</small>
+                </button>
+                <button class="mode-btn mode-btn-admin" onclick="showAdminPassword()">
+                    👩‍💼 관리자 모드<br><small style="font-size: 12px;">모든 기능 사용</small>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 학생 정보 입력 모달 -->
+    <div class="student-info-modal" id="studentInfoModal">
+        <div class="student-info-content">
+            <h2>👤 정보 입력</h2>
+            <p>자신의 이름과 학년을 입력해주세요</p>
+            <div class="info-input-group">
+                <div class="info-input-field">
+                    <label for="studentName">이름</label>
+                    <input type="text" id="studentName" placeholder="예: 고윤아">
+                </div>
+                <div class="info-input-field">
+                    <label for="studentGrade">학년</label>
+                    <select id="studentGrade">
+                        <option value="">학년 선택</option>
+                        <option value="초등 1학년">초등 1학년</option>
+                        <option value="초등 2학년">초등 2학년</option>
+                        <option value="초등 3학년">초등 3학년</option>
+                        <option value="초등 4학년">초등 4학년</option>
+                        <option value="초등 5학년">초등 5학년</option>
+                        <option value="초등 6학년">초등 6학년</option>
+                        <option value="중등 1학년">중등 1학년</option>
+                        <option value="중등 2학년">중등 2학년</option>
+                        <option value="중등 3학년">중등 3학년</option>
+                        <option value="고등 1학년">고등 1학년</option>
+                        <option value="고등 2학년">고등 2학년</option>
+                        <option value="고등 3학년">고등 3학년</option>
+                    </select>
+                </div>
+            </div>
+            <div class="info-buttons">
+                <button class="info-btn info-btn-confirm" onclick="confirmStudentInfo()">확인</button>
+                <button class="info-btn info-btn-cancel" onclick="cancelStudentMode()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 비밀번호 모달 -->
+    <div class="password-modal" id="passwordModal">
+        <div class="password-modal-content">
+            <h2>🔐 관리자 모드</h2>
+            <p>비밀번호를 입력하세요</p>
+            <input type="password" class="password-input" id="adminPassword" placeholder="비밀번호" onkeypress="if(event.key==='Enter') confirmAdminPassword()">
+            <div class="password-buttons">
+                <button class="password-btn-confirm" onclick="confirmAdminPassword()">확인</button>
+                <button class="password-btn-cancel" onclick="closePasswordModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-title">
+                <h1>🎓 소리정원</h1>
+                <p>연습 시간 기록 시스템</p>
+            </div>
+            <div class="header-user">
+                <div class="user-badge" id="userBadge">학생</div>
+                <button class="logout-btn" onclick="logout()">🔄 모드변경</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('input')">📝 기록하기</button>
+            <button class="tab-btn" id="statsTab" onclick="showTab('stats')">📊 통계</button>
+            <button class="tab-btn" id="manageTab" onclick="showTab('manage')">⚙️ 관리</button>
+        </div>
+
+        <div class="content">
+            <!-- 기록하기 탭 -->
+            <div id="input" class="tab-content active">
+                <h2 style="margin-bottom: 20px; color: #333;">연습 시간 기록</h2>
+
+                <div class="message" id="inputMessage"></div>
+
+                <div id="studentDisplayInfo" style="margin-bottom: 20px; padding: 15px; background: #f0f0f0; border-radius: 10px;">
+                    <div style="color: #667eea; font-weight: 600; font-size: 18px;" id="studentInfo"></div>
+                </div>
+
+                <div class="input-section">
+                    <h3 style="margin-bottom: 15px; color: #666;">📚 연습 시간 입력</h3>
+
+                    <div class="input-group">
+                        <div class="input-field">
+                            <label for="practiceDate">📅 날짜</label>
+                            <input type="date" id="practiceDate">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <div class="input-field">
+                            <label for="practiceTime">⏰ 시간</label>
+                            <input type="number" id="practiceTime" min="0" max="23" value="0" placeholder="0-23">
+                        </div>
+                        <div class="input-field">
+                            <label for="practiceMinute">분</label>
+                            <input type="number" id="practiceMinute" min="0" max="59" value="0" placeholder="0-59">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <div class="input-field">
+                            <label for="hours">연습 시간</label>
+                            <input type="number" id="hours" min="0" max="24" value="0" placeholder="몇 시간?">
+                        </div>
+                        <div class="input-field">
+                            <label for="minutes">연습 분</label>
+                            <input type="number" id="minutes" min="0" max="59" value="0" placeholder="몇 분?">
+                        </div>
+                    </div>
+
+                    <button class="btn" onclick="savePractice()">💾 저장하기</button>
+                </div>
+            </div>
+
+            <!-- 통계 탭 -->
+            <div id="stats" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #333;">연습 통계</h2>
+
+                <div class="stats-filter">
+                    <button class="active" onclick="loadStats('day')">오늘</button>
+                    <button onclick="loadStats('week')">이번주</button>
+                    <button onclick="loadStats('month')">이번달</button>
+                </div>
+
+                <div class="stats-summary">
+                    <div class="stat-card">
+                        <div class="label">총 연습 시간</div>
+                        <div class="value" id="totalHours">0시간</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">참여 학생</div>
+                        <div class="value" id="studentCount">0명</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">평균 시간</div>
+                        <div class="value" id="avgHours">0시간</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="statsChart"></canvas>
+                </div>
+
+                <h3 style="margin-bottom: 15px; color: #333;">학생 순위</h3>
+                <ul class="student-list" id="rankingList"></ul>
+            </div>
+
+            <!-- 관리 탭 -->
+            <div id="manage" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #333;">학생 관리</h2>
+
+                <div class="message" id="manageMessage"></div>
+
+                <div class="manage-section">
+                    <h3>학생 추가</h3>
+                    <div class="add-student-form">
+                        <input type="text" id="newStudentName" placeholder="학생 이름 입력">
+                        <button class="btn" onclick="addStudent()">➕ 추가</button>
+                    </div>
+                </div>
+
+                <div class="manage-section">
+                    <h3>현재 학생 목록</h3>
+                    <ul class="manage-list" id="studentManageList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStudent = null;
+        let currentGrade = null;
+        let statsChart = null;
+        let isAdmin = false;
+
+        // 초기화
+        function init() {
+            const savedStudent = localStorage.getItem('studentName');
+            const savedGrade = localStorage.getItem('studentGrade');
+            const savedAdmin = localStorage.getItem('isAdmin') === 'true';
+
+            if ((savedStudent && savedGrade) || savedAdmin) {
+                if (savedStudent && savedGrade) {
+                    currentStudent = savedStudent;
+                    currentGrade = savedGrade;
+                    isAdmin = false;
+                    initStudentMode();
+                } else if (savedAdmin) {
+                    isAdmin = true;
+                    initAdminMode();
+                }
+                document.getElementById('modeSelector').classList.remove('active');
+            }
+        }
+
+        // 학생 모드 선택
+        function selectStudentMode() {
+            document.getElementById('studentInfoModal').classList.add('active');
+        }
+
+        // 학생 정보 확인
+        function confirmStudentInfo() {
+            const name = document.getElementById('studentName').value.trim();
+            const grade = document.getElementById('studentGrade').value;
+
+            if (!name) {
+                alert('이름을 입력해주세요');
+                return;
+            }
+
+            if (!grade) {
+                alert('학년을 선택해주세요');
+                return;
+            }
+
+            currentStudent = name;
+            currentGrade = grade;
+            isAdmin = false;
+            localStorage.setItem('studentName', name);
+            localStorage.setItem('studentGrade', grade);
+            localStorage.removeItem('isAdmin');
+
+            document.getElementById('studentInfoModal').classList.remove('active');
+            document.getElementById('modeSelector').classList.remove('active');
+            initStudentMode();
+        }
+
+        // 학생 모드 취소
+        function cancelStudentMode() {
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentGrade').value = '';
+            document.getElementById('studentInfoModal').classList.remove('active');
+        }
+
+        // 학생 모드 초기화
+        function initStudentMode() {
+            document.getElementById('userBadge').textContent = '📱 ' + currentStudent;
+            document.getElementById('statsTab').classList.add('disabled');
+            document.getElementById('manageTab').classList.add('disabled');
+            document.getElementById('studentInfo').textContent = `📚 ${currentStudent} (${currentGrade})`;
+
+            // 오늘 날짜를 기본값으로 설정
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('practiceDate').value = today;
+        }
+
+        // 관리자 비밀번호 입력
+        function showAdminPassword() {
+            document.getElementById('passwordModal').classList.add('active');
+            document.getElementById('adminPassword').focus();
+        }
+
+        // 관리자 비밀번호 확인
+        function confirmAdminPassword() {
+            const pwd = document.getElementById('adminPassword').value;
+            if (pwd === '1008') {
+                isAdmin = true;
+                currentStudent = null;
+                currentGrade = null;
+                localStorage.setItem('isAdmin', 'true');
+                localStorage.removeItem('studentName');
+                localStorage.removeItem('studentGrade');
+                document.getElementById('passwordModal').classList.remove('active');
+                document.getElementById('modeSelector').classList.remove('active');
+                initAdminMode();
+            } else {
+                alert('❌ 비밀번호가 틀렸습니다');
+                document.getElementById('adminPassword').value = '';
+            }
+        }
+
+        // 비밀번호 모달 닫기
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.remove('active');
+        }
+
+        // 관리자 모드 초기화
+        function initAdminMode() {
+            document.getElementById('userBadge').textContent = '👩‍💼 관리자';
+            document.getElementById('statsTab').classList.remove('disabled');
+            document.getElementById('manageTab').classList.remove('disabled');
+
+            loadStudents();
+            updateStudentManageList();
+            loadStats('day');
+        }
+
+        // 로그아웃 (모드 변경)
+        function logout() {
+            localStorage.removeItem('studentName');
+            localStorage.removeItem('studentGrade');
+            localStorage.removeItem('isAdmin');
+            currentStudent = null;
+            currentGrade = null;
+            isAdmin = false;
+            document.getElementById('modeSelector').classList.add('active');
+        }
+
+        // 탭 전환
+        function showTab(tabName) {
+            if ((tabName === 'stats' || tabName === 'manage') && !isAdmin) {
+                alert('⛔ 관리자만 접근 가능합니다');
+                return;
+            }
+
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // 학생 목록 로드 (관리자용)
+        function loadStudents() {
+            fetch('/api/students')
+                .then(res => res.json())
+                .then(students => {
+                    // 관리자 모드에서는 학생 목록을 표시하지 않음
+                });
+        }
+
+        // 연습 기록 저장
+        function savePractice() {
+            if (!currentStudent) {
+                showMessage('inputMessage', '학생 정보가 없습니다', 'error');
+                return;
+            }
+
+            const practiceDate = document.getElementById('practiceDate').value;
+            const practiceTime = document.getElementById('practiceTime').value;
+            const practiceMinute = document.getElementById('practiceMinute').value;
+            const hours = document.getElementById('hours').value;
+            const minutes = document.getElementById('minutes').value;
+
+            if (!practiceDate) {
+                showMessage('inputMessage', '날짜를 선택해주세요', 'error');
+                return;
+            }
+
+            if (hours === '0' && minutes === '0') {
+                showMessage('inputMessage', '연습 시간을 입력해주세요', 'error');
+                return;
+            }
+
+            const timeStr = `${String(practiceTime).padStart(2, '0')}:${String(practiceMinute).padStart(2, '0')}`;
+
+            fetch('/api/practice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentName: currentStudent,
+                    grade: currentGrade,
+                    date: practiceDate,
+                    time: timeStr,
+                    hours: hours,
+                    minutes: minutes
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('inputMessage', `✅ ${currentStudent} - ${practiceDate} ${timeStr} / ${hours}시간 ${minutes}분 저장됨!`, 'success');
+                    document.getElementById('practiceDate').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('practiceTime').value = '0';
+                    document.getElementById('practiceMinute').value = '0';
+                    document.getElementById('hours').value = '0';
+                    document.getElementById('minutes').value = '0';
+                } else {
+                    showMessage('inputMessage', '저장 실패', 'error');
+                }
+            });
+        }
+
+        // 통계 로드
+        function loadStats(type) {
+            fetch(`/api/stats/${type}`)
+                .then(res => res.json())
+                .then(stats => {
+                    const sorted = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+
+                    const totalHours = sorted.reduce((sum, [_, hours]) => sum + hours, 0);
+                    const studentCount = sorted.length;
+                    const avgHours = studentCount > 0 ? (totalHours / studentCount).toFixed(1) : 0;
+
+                    document.getElementById('totalHours').textContent = totalHours.toFixed(1) + '시간';
+                    document.getElementById('studentCount').textContent = studentCount + '명';
+                    document.getElementById('avgHours').textContent = avgHours + '시간';
+
+                    drawChart(sorted.slice(0, 10));
+
+                    const rankingList = document.getElementById('rankingList');
+                    rankingList.innerHTML = '';
+                    sorted.forEach(([student, hours], idx) => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <div style="display: flex; align-items: center;">
+                                <div class="student-rank">${idx + 1}</div>
+                                <div class="student-name">${student}</div>
+                            </div>
+                            <div class="student-hours">${hours.toFixed(1)}시간</div>
+                        `;
+                        rankingList.appendChild(li);
+                    });
+                });
+        }
+
+        // 차트 그리기
+        function drawChart(data) {
+            const ctx = document.getElementById('statsChart');
+
+            if (statsChart) {
+                statsChart.destroy();
+            }
+
+            const labels = data.map(([student, _]) => student);
+            const values = data.map(([_, hours]) => hours);
+
+            statsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '연습 시간 (시간)',
+                        data: values,
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // 학생 추가
+        function addStudent() {
+            const name = document.getElementById('newStudentName').value.trim();
+            if (!name) {
+                showMessage('manageMessage', '학생 이름을 입력해주세요', 'error');
+                return;
+            }
+
+            fetch('/api/students/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('manageMessage', `✅ ${name} 학생 추가됨!`, 'success');
+                    document.getElementById('newStudentName').value = '';
+                    loadStudents();
+                    updateStudentManageList();
+                } else {
+                    showMessage('manageMessage', '추가 실패 (이미 존재하거나 오류)', 'error');
+                }
+            });
+        }
+
+        // 학생 삭제
+        function deleteStudent(name) {
+            if (!confirm(`${name} 학생을 정말 삭제할까요?`)) return;
+
+            fetch('/api/students/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('manageMessage', `✅ ${name} 학생 삭제됨!`, 'success');
+                    loadStudents();
+                    updateStudentManageList();
+                }
+            });
+        }
+
+        // 학생 관리 목록 업데이트
+        function updateStudentManageList() {
+            fetch('/api/students')
+                .then(res => res.json())
+                .then(students => {
+                    const list = document.getElementById('studentManageList');
+                    list.innerHTML = '';
+                    students.forEach(student => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span>${student}</span>
+                            <button class="btn delete-btn" onclick="deleteStudent('${student}')">🗑️ 삭제</button>
+                        `;
+                        list.appendChild(li);
+                    });
+                });
+        }
+
+        // 메시지 표시
+        function showMessage(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `message ${type}`;
+            setTimeout(() => {
+                el.className = 'message';
+            }, 3000);
+        }
+
+        // 페이지 로드 시 초기화
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "sorijeongwon",
+  "version": "1.0.0",
+  "description": "소리정원 - 연습 시간 기록 앱",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2"
+  }
+}
