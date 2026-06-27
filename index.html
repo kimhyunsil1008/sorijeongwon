@@ -643,7 +643,7 @@
             <div class="info-input-group">
                 <div class="info-input-field">
                     <label for="studentName">이름</label>
-                    <input type="text" id="studentName" placeholder="예: 고윤아">
+                    <input type="text" id="studentName" placeholder="예: 김소리정원">
                 </div>
                 <div class="info-input-field">
                     <label for="studentGrade">학년</label>
@@ -721,20 +721,6 @@
                             <label for="practiceDate">📅 날짜</label>
                             <input type="date" id="practiceDate">
                         </div>
-                    </div>
-
-                    <div class="input-group">
-                        <div class="input-field">
-                            <label for="practiceTime">⏰ 시간</label>
-                            <input type="number" id="practiceTime" min="0" max="23" value="0" placeholder="0-23">
-                        </div>
-                        <div class="input-field">
-                            <label for="practiceMinute">분</label>
-                            <input type="number" id="practiceMinute" min="0" max="59" value="0" placeholder="0-59">
-                        </div>
-                    </div>
-
-                    <div class="input-group">
                         <div class="input-field">
                             <label for="hours">연습 시간</label>
                             <input type="number" id="hours" min="0" max="24" value="0" placeholder="몇 시간?">
@@ -799,6 +785,25 @@
                 <div class="manage-section">
                     <h3>현재 학생 목록</h3>
                     <ul class="manage-list" id="studentManageList"></ul>
+                </div>
+
+                <div class="manage-section">
+                    <h3>📋 연습 기록 관리</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 14px; color: #666;">학생 선택:</label>
+                        <select id="studentFilterSelect" style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px;">
+                            <option value="">모든 기록</option>
+                        </select>
+                    </div>
+                    <div id="recordsContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px;">
+                        <p style="color: #999; text-align: center;">기록이 없습니다</p>
+                    </div>
+                </div>
+
+                <div class="manage-section">
+                    <h3>⚠️ 전체 초기화</h3>
+                    <p style="color: #666; margin-bottom: 15px; font-size: 14px;">모든 연습 기록 데이터를 삭제합니다. (되돌릴 수 없음)</p>
+                    <button class="btn btn-danger" onclick="resetAllData()">🔄 전체 데이터 초기화</button>
                 </div>
             </div>
         </div>
@@ -920,6 +925,8 @@
             loadStudents();
             updateStudentManageList();
             loadStats('day');
+            loadRecords();
+            updateStudentFilter();
         }
 
         // 로그아웃 (모드 변경)
@@ -968,8 +975,6 @@
             }
 
             const practiceDate = document.getElementById('practiceDate').value;
-            const practiceTime = document.getElementById('practiceTime').value;
-            const practiceMinute = document.getElementById('practiceMinute').value;
             const hours = document.getElementById('hours').value;
             const minutes = document.getElementById('minutes').value;
 
@@ -983,8 +988,6 @@
                 return;
             }
 
-            const timeStr = `${String(practiceTime).padStart(2, '0')}:${String(practiceMinute).padStart(2, '0')}`;
-
             fetch('/api/practice', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -992,7 +995,6 @@
                     studentName: currentStudent,
                     grade: currentGrade,
                     date: practiceDate,
-                    time: timeStr,
                     hours: hours,
                     minutes: minutes
                 })
@@ -1000,10 +1002,8 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    showMessage('inputMessage', `✅ ${currentStudent} - ${practiceDate} ${timeStr} / ${hours}시간 ${minutes}분 저장됨!`, 'success');
+                    showMessage('inputMessage', `✅ ${currentStudent} - ${practiceDate} / ${hours}시간 ${minutes}분 저장됨!`, 'success');
                     document.getElementById('practiceDate').value = new Date().toISOString().split('T')[0];
-                    document.getElementById('practiceTime').value = '0';
-                    document.getElementById('practiceMinute').value = '0';
                     document.getElementById('hours').value = '0';
                     document.getElementById('minutes').value = '0';
                 } else {
@@ -1157,6 +1157,112 @@
             setTimeout(() => {
                 el.className = 'message';
             }, 3000);
+        }
+
+        // 전체 데이터 초기화
+        function resetAllData() {
+            if (!confirm('⚠️ 정말로 모든 연습 기록을 삭제할까요?\n(되돌릴 수 없습니다!)')) {
+                return;
+            }
+
+            if (!confirm('⚠️ 정말 정말 확실해요?\n한 번 더 확인합니다.')) {
+                return;
+            }
+
+            fetch('/api/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('manageMessage', '✅ 모든 데이터가 초기화되었습니다!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    showMessage('manageMessage', '❌ 초기화 실패', 'error');
+                }
+            });
+        }
+
+        // 연습 기록 로드 및 표시
+        function loadRecords() {
+            fetch('/api/practice-list')
+                .then(res => res.json())
+                .then(records => {
+                    const container = document.getElementById('recordsContainer');
+                    const filterValue = document.getElementById('studentFilterSelect').value;
+
+                    if (!records || records.length === 0) {
+                        container.innerHTML = '<p style="color: #999; text-align: center;">기록이 없습니다</p>';
+                        return;
+                    }
+
+                    let filteredRecords = records;
+                    if (filterValue) {
+                        filteredRecords = records.filter(r => r.student === filterValue);
+                    }
+
+                    if (filteredRecords.length === 0) {
+                        container.innerHTML = '<p style="color: #999; text-align: center;">해당 학생의 기록이 없습니다</p>';
+                        return;
+                    }
+
+                    container.innerHTML = '';
+                    filteredRecords.forEach((record, index) => {
+                        const recordIndex = records.indexOf(record);
+                        const div = document.createElement('div');
+                        div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;';
+                        div.innerHTML = `
+                            <span style="flex: 1;">
+                                <strong>${record.student}</strong> - ${record.date}
+                                <br><small style="color: #666;">${record.hours}시간 ${record.minutes}분</small>
+                            </span>
+                            <button class="btn delete-btn" style="padding: 5px 10px; font-size: 12px;" onclick="deleteRecord(${recordIndex})">❌ 삭제</button>
+                        `;
+                        container.appendChild(div);
+                    });
+                });
+        }
+
+        // 특정 기록 삭제
+        function deleteRecord(index) {
+            if (!confirm('이 기록을 삭제할까요?')) return;
+
+            fetch('/api/practice/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ recordIndex: index })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('manageMessage', '✅ 기록이 삭제되었습니다!', 'success');
+                    loadRecords();
+                } else {
+                    showMessage('manageMessage', '❌ 삭제 실패', 'error');
+                }
+            });
+        }
+
+        // 학생 필터 드롭다운 업데이트
+        function updateStudentFilter() {
+            fetch('/api/students')
+                .then(res => res.json())
+                .then(students => {
+                    const select = document.getElementById('studentFilterSelect');
+                    const currentValue = select.value;
+                    select.innerHTML = '<option value="">모든 기록</option>';
+                    students.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student;
+                        option.textContent = student;
+                        select.appendChild(option);
+                    });
+                    select.value = currentValue;
+                    select.onchange = () => loadRecords();
+                });
         }
 
         // 페이지 로드 시 초기화

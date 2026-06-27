@@ -29,6 +29,16 @@ app.get('/api/students', (req, res) => {
   }
 });
 
+// API: 연습 기록 조회
+app.get('/api/practice-list', (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+    res.json(data.records);
+  } catch (error) {
+    res.status(500).json({ error: '기록 조회 실패' });
+  }
+});
+
 // API: 연습 기록 저장
 app.post('/api/practice', (req, res) => {
   try {
@@ -114,6 +124,48 @@ app.post('/api/students/delete', (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: '삭제 실패' });
+  }
+});
+
+// API: 전체 데이터 초기화
+app.post('/api/reset', (req, res) => {
+  try {
+    fs.writeFileSync(dataFile, JSON.stringify({ records: [] }));
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: '초기화 실패' });
+  }
+});
+
+// API: 특정 기록 삭제
+app.post('/api/practice/delete', (req, res) => {
+  try {
+    const { recordIndex } = req.body;
+    const data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+
+    if (recordIndex >= 0 && recordIndex < data.records.length) {
+      data.records.splice(recordIndex, 1);
+      fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ error: '잘못된 인덱스' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: '삭제 실패' });
+  }
+});
+
+// API: 특정 학생의 모든 기록 삭제
+app.post('/api/practice/delete-student', (req, res) => {
+  try {
+    const { studentName } = req.body;
+    const data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+
+    data.records = data.records.filter(record => record.student !== studentName);
+    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: '학생 기록 삭제 실패' });
   }
 });
 
