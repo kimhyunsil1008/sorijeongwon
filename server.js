@@ -7,6 +7,15 @@ const app = express();
 const PORT = 3000;
 
 app.use(bodyParser.json());
+
+// 캐시 제거 (항상 최신 파일 제공)
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 app.use(express.static(__dirname));
 
 const dataFile = path.join(__dirname, 'data.json');
@@ -42,16 +51,39 @@ app.get('/api/practice-list', (req, res) => {
 // API: 연습 기록 저장
 app.post('/api/practice', (req, res) => {
   try {
-    const { studentName, hours, minutes, date, time } = req.body;
+    const { studentName, date, startTime, endTime } = req.body;
     const data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+
+    // 시간 계산
+    let totalMinutes = 0;
+    let hours = 0;
+    let minutes = 0;
+
+    if (startTime && endTime) {
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+
+      let startTotalMin = startH * 60 + startM;
+      let endTotalMin = endH * 60 + endM;
+
+      // 자정 넘은 경우 대비
+      if (endTotalMin < startTotalMin) {
+        endTotalMin += 24 * 60;
+      }
+
+      totalMinutes = endTotalMin - startTotalMin;
+      hours = Math.floor(totalMinutes / 60);
+      minutes = totalMinutes % 60;
+    }
 
     data.records.push({
       date: date || new Date().toISOString().split('T')[0],
-      time: time || '',
+      startTime: startTime || '',
+      endTime: endTime || '',
       student: studentName,
-      hours: parseInt(hours),
-      minutes: parseInt(minutes),
-      totalMinutes: parseInt(hours) * 60 + parseInt(minutes)
+      hours: hours,
+      minutes: minutes,
+      totalMinutes: totalMinutes
     });
 
     fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
@@ -99,10 +131,12 @@ app.get('/api/stats/:type', (req, res) => {
 app.post('/api/students/add', (req, res) => {
   try {
     const { name } = req.body;
-    const students = JSON.parse(fs.readFileSync(studentsFile, 'utf-8'));
+    let students = JSON.parse(fs.readFileSync(studentsFile, 'utf-8'));
 
     if (!students.includes(name)) {
       students.push(name);
+      // 가나다순 정렬
+      students.sort((a, b) => a.localeCompare(b, 'ko'));
       fs.writeFileSync(studentsFile, JSON.stringify(students, null, 2));
       res.json({ success: true });
     } else {

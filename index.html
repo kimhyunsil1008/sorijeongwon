@@ -722,12 +722,18 @@
                             <input type="date" id="practiceDate">
                         </div>
                         <div class="input-field">
-                            <label for="hours">연습 시간</label>
-                            <input type="number" id="hours" min="0" max="24" value="0" placeholder="몇 시간?">
+                            <label for="startTime">🕐 시작 시간</label>
+                            <input type="time" id="startTime">
                         </div>
                         <div class="input-field">
-                            <label for="minutes">연습 분</label>
-                            <input type="number" id="minutes" min="0" max="59" value="0" placeholder="몇 분?">
+                            <label for="endTime">🕐 끝나는 시간</label>
+                            <input type="time" id="endTime" onchange="calculateDuration()">
+                        </div>
+                        <div class="input-field">
+                            <label>⏱️ 연습 시간</label>
+                            <div style="padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; font-weight: 600; color: #667eea;">
+                                <span id="durationDisplay">0시간 0분</span>
+                            </div>
                         </div>
                     </div>
 
@@ -967,6 +973,33 @@
                 });
         }
 
+        // 연습 시간 자동 계산
+        function calculateDuration() {
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            if (!startTime || !endTime) {
+                document.getElementById('durationDisplay').textContent = '0시간 0분';
+                return;
+            }
+
+            const [startH, startM] = startTime.split(':').map(Number);
+            const [endH, endM] = endTime.split(':').map(Number);
+
+            let startTotalMin = startH * 60 + startM;
+            let endTotalMin = endH * 60 + endM;
+
+            if (endTotalMin < startTotalMin) {
+                endTotalMin += 24 * 60;
+            }
+
+            const totalMinutes = endTotalMin - startTotalMin;
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
+            document.getElementById('durationDisplay').textContent = `${hours}시간 ${minutes}분`;
+        }
+
         // 연습 기록 저장
         function savePractice() {
             if (!currentStudent) {
@@ -975,16 +1008,16 @@
             }
 
             const practiceDate = document.getElementById('practiceDate').value;
-            const hours = document.getElementById('hours').value;
-            const minutes = document.getElementById('minutes').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
 
             if (!practiceDate) {
                 showMessage('inputMessage', '날짜를 선택해주세요', 'error');
                 return;
             }
 
-            if (hours === '0' && minutes === '0') {
-                showMessage('inputMessage', '연습 시간을 입력해주세요', 'error');
+            if (!startTime || !endTime) {
+                showMessage('inputMessage', '시작과 끝나는 시간을 선택해주세요', 'error');
                 return;
             }
 
@@ -993,19 +1026,20 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     studentName: currentStudent,
-                    grade: currentGrade,
                     date: practiceDate,
-                    hours: hours,
-                    minutes: minutes
+                    startTime: startTime,
+                    endTime: endTime
                 })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    showMessage('inputMessage', `✅ ${currentStudent} - ${practiceDate} / ${hours}시간 ${minutes}분 저장됨!`, 'success');
+                    const durationText = document.getElementById('durationDisplay').textContent;
+                    showMessage('inputMessage', `✅ ${currentStudent} - ${practiceDate} / ${durationText} 저장됨!`, 'success');
                     document.getElementById('practiceDate').value = new Date().toISOString().split('T')[0];
-                    document.getElementById('hours').value = '0';
-                    document.getElementById('minutes').value = '0';
+                    document.getElementById('startTime').value = '';
+                    document.getElementById('endTime').value = '';
+                    document.getElementById('durationDisplay').textContent = '0시간 0분';
                 } else {
                     showMessage('inputMessage', '저장 실패', 'error');
                 }
@@ -1136,6 +1170,9 @@
             fetch('/api/students')
                 .then(res => res.json())
                 .then(students => {
+                    // 가나다순 정렬
+                    students.sort((a, b) => a.localeCompare(b, 'ko'));
+
                     const list = document.getElementById('studentManageList');
                     list.innerHTML = '';
                     students.forEach(student => {
