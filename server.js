@@ -9,10 +9,19 @@ const PORT = 3000;
 app.use(bodyParser.json());
 
 // 캐시 제거 (항상 최신 파일 제공)
+const VERSION = Date.now(); // 서버 재시작 때마다 새 버전
+
 app.use((req, res, next) => {
-  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.set('Pragma', 'no-cache');
-  res.set('Expires', '0');
+  // index.html은 절대 캐시하지 않음
+  if (req.path === '/' || req.path === '/index.html') {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('ETag', VERSION);
+  } else {
+    // 다른 파일들은 1시간 캐시
+    res.set('Cache-Control', 'public, max-age=3600');
+  }
   next();
 });
 
@@ -45,6 +54,47 @@ app.get('/api/practice-list', (req, res) => {
     res.json(data.records);
   } catch (error) {
     res.status(500).json({ error: '기록 조회 실패' });
+  }
+});
+
+// API: 학생별 통계 (날짜별)
+app.get('/api/student-stats/:studentName', (req, res) => {
+  try {
+    const studentName = req.params.studentName;
+    const data = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+
+    // 해당 학생의 기록만 필터링
+    const studentRecords = data.records.filter(r => r.student === studentName);
+
+    // 날짜별로 그룹핑
+    const statsByDate = {};
+    let totalMinutes = 0;
+
+    studentRecords.forEach(record => {
+      const date = record.date;
+      if (!statsByDate[date]) {
+        statsByDate[date] = 0;
+      }
+      statsByDate[date] += record.totalMinutes || 0;
+      totalMinutes += record.totalMinutes || 0;
+    });
+
+    // 날짜 역순 정렬
+    const sortedDates = Object.keys(statsByDate).sort().reverse();
+
+    res.json({
+      records: sortedDates.map(date => ({
+        date: date,
+        totalMinutes: statsByDate[date],
+        hours: Math.floor(statsByDate[date] / 60),
+        minutes: statsByDate[date] % 60
+      })),
+      totalMinutes: totalMinutes,
+      totalHours: Math.floor(totalMinutes / 60),
+      totalMinutesRemainder: totalMinutes % 60
+    });
+  } catch (error) {
+    res.status(500).json({ error: '학생 통계 조회 실패' });
   }
 });
 
