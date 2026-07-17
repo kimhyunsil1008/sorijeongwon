@@ -749,6 +749,14 @@
             <div id="myStats" class="tab-content">
                 <h2 style="margin-bottom: 20px; color: #333;">📊 내 연습 통계</h2>
 
+                <!-- 필터 버튼 -->
+                <div class="stats-filter" style="margin-bottom: 20px;">
+                    <button class="active" onclick="loadMyStats('day')">오늘</button>
+                    <button onclick="loadMyStats('week')">이번주</button>
+                    <button onclick="loadMyStats('month')">이번달</button>
+                    <button onclick="loadMyStats('all')">전체</button>
+                </div>
+
                 <div id="myStatsContainer" style="padding: 20px; background: #f9f9f9; border-radius: 8px;">
                     <div style="text-align: center; padding: 40px; color: #999;">
                         아직 기록이 없습니다. 기록하기 탭에서 연습을 기록해주세요! 🎵
@@ -984,12 +992,18 @@
             event.target.classList.add('active');
         }
 
-        // 학생 본인 통계 로드
-        function loadMyStats() {
+        // 학생 본인 통계 로드 (기간별 필터링)
+        function loadMyStats(period = 'day') {
             if (!currentStudent) {
                 document.getElementById('myStatsContainer').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">로그인되지 않았습니다</div>';
                 return;
             }
+
+            // 필터 버튼 활성화
+            document.querySelectorAll('#myStats .stats-filter button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
 
             fetch(`/api/student-stats/${encodeURIComponent(currentStudent)}`)
                 .then(res => res.json())
@@ -1001,17 +1015,57 @@
                         return;
                     }
 
+                    // 기간별 필터링
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    let startDate = new Date(today);
+
+                    if (period === 'day') {
+                        // 오늘
+                        startDate.setHours(0, 0, 0, 0);
+                    } else if (period === 'week') {
+                        // 이번주 (일요일부터)
+                        startDate.setDate(today.getDate() - today.getDay());
+                        startDate.setHours(0, 0, 0, 0);
+                    } else if (period === 'month') {
+                        // 이번달
+                        startDate.setDate(1);
+                        startDate.setHours(0, 0, 0, 0);
+                    } else {
+                        // 전체
+                        startDate = new Date('2000-01-01');
+                    }
+
+                    // 필터링된 기록
+                    let filteredRecords = data.records.filter(record => {
+                        const recordDate = new Date(record.date);
+                        return recordDate >= startDate;
+                    });
+
+                    if (filteredRecords.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">해당 기간에 기록이 없습니다</div>';
+                        return;
+                    }
+
+                    // 기간 통계 계산
+                    let totalMin = 0;
+                    filteredRecords.forEach(r => {
+                        totalMin += r.totalMinutes || 0;
+                    });
+                    const totalH = Math.floor(totalMin / 60);
+                    const totalM = totalMin % 60;
+
                     // 날짜별 통계 표시
                     let html = `
                         <div style="margin-bottom: 20px;">
                             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                                 <div style="flex: 1; min-width: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
-                                    <div style="font-size: 14px; opacity: 0.9;">전체 연습 시간</div>
-                                    <div style="font-size: 28px; font-weight: 700;">${data.totalHours}시간 ${data.totalMinutesRemainder}분</div>
+                                    <div style="font-size: 14px; opacity: 0.9;">이 기간 연습 시간</div>
+                                    <div style="font-size: 28px; font-weight: 700;">${totalH}시간 ${totalM}분</div>
                                 </div>
                                 <div style="flex: 1; min-width: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
                                     <div style="font-size: 14px; opacity: 0.9;">기록 횟수</div>
-                                    <div style="font-size: 28px; font-weight: 700;">${data.records.length}회</div>
+                                    <div style="font-size: 28px; font-weight: 700;">${filteredRecords.length}회</div>
                                 </div>
                             </div>
                         </div>
@@ -1020,7 +1074,7 @@
                         <div style="max-height: 400px; overflow-y: auto;">
                     `;
 
-                    data.records.forEach(record => {
+                    filteredRecords.forEach(record => {
                         html += `
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px;">
                                 <div style="flex: 1;">
